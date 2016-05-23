@@ -1,7 +1,9 @@
 from setuptools import setup
 
 setup(
+    packages=['pyModbusTCPServer'],
+    platforms='any',
     scripts=[
-        'server/pymbserver'
+        'scripts/pymbserver'
     ]
 )

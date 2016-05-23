@@ -1,15 +1,15 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import argparse
+# Python module: ModbusServer class (ModBus/TCP Server)
+
 import struct
 from threading import Lock
 
 # for python2 compatibility
 try:
-    import socketserver as socketserver
+    from socketserver import BaseRequestHandler, TCPServer, ThreadingMixIn
 except ImportError:
-    import SocketServer as socketserver
+    from SocketServer import BaseRequestHandler, TCPServer, ThreadingMixIn
 
 # some const
 # modbus function code
@@ -76,7 +76,7 @@ class DataBank:
                 return None
 
 
-class ModbusService(socketserver.BaseRequestHandler):
+class ModbusService(BaseRequestHandler):
     def handle(self):
         print('Client connected with ', self.client_address)
         while True:
@@ -211,11 +211,11 @@ class ModbusService(socketserver.BaseRequestHandler):
         self.request.close()
 
 
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class ThreadedTCPServer(ThreadingMixIn, TCPServer):
     pass
 
 
-class ModbusTCPServer(object):
+class ModbusServer(object):
     def __init__(self, host='localhost', port=502):
         # args
         self.host = host
@@ -228,16 +228,3 @@ class ModbusTCPServer(object):
 
     def start(self):
         self.t.serve_forever()
-
-
-if __name__ == '__main__':
-    # parse args
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-H', '--host', type=str, default='localhost',
-                        help='Host')
-    parser.add_argument('-p', '--port', type=int, default=5020,
-                        help='TCP port')
-    args = parser.parse_args()
-    # start modbus server
-    server = ModbusTCPServer(host=args.host, port=args.port)
-    server.start()
