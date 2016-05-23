@@ -78,7 +78,6 @@ class DataBank:
 
 class ModbusService(BaseRequestHandler):
     def handle(self):
-        print('Client connected with ', self.client_address)
         while True:
             rx_head = self.request.recv(7)
             # close connection if no standard 7 bytes header
@@ -207,7 +206,6 @@ class ModbusService(BaseRequestHandler):
             tx_head = struct.pack('>HHHB', rx_hd_tr_id, rx_hd_pr_id, len(tx_body) + 1, rx_hd_unit_id)
             # send frame
             self.request.send(tx_head + tx_body)
-        print('Client exited')
         self.request.close()
 
 
