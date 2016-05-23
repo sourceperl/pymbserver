@@ -2,6 +2,7 @@
 
 # Python module: ModbusServer class (ModBus/TCP Server)
 
+import socket
 import struct
 from threading import Lock
 
@@ -219,6 +220,7 @@ class ModbusServer(object):
         self.host = host
         self.port = port
         # set class attribute
+        ThreadedTCPServer.address_family = socket.AF_INET6
         ThreadedTCPServer.allow_reuse_address = True
         ThreadedTCPServer.daemon_threads = True
         # start server
