@@ -76,7 +76,7 @@ class DataBank:
                 return None
 
 
-class Service(socketserver.BaseRequestHandler):
+class ModbusService(socketserver.BaseRequestHandler):
     def handle(self):
         print('Client connected with ', self.client_address)
         while True:
@@ -114,10 +114,8 @@ class Service(socketserver.BaseRequestHandler):
                         b_size += 1 if (b_count % 8) else 0
                         bytes_l = [0] * b_size
                         # populate bytes list with data bank bits
-                        print(bits_l)
                         for i, item in enumerate(bits_l):
                             bytes_l[int(i/8)] += (2**(i % 8)) * int(item)
-                        print(bytes_l)
                         # format body of frame with bits
                         tx_body = struct.pack('BB', rx_bd_fc, len(bytes_l))
                         # add bytes with bits
@@ -217,6 +215,21 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 
+class ModbusTCPServer(object):
+    def __init__(self, host='localhost', port=502):
+        # args
+        self.host = host
+        self.port = port
+        # set class attribute
+        ThreadedTCPServer.allow_reuse_address = True
+        ThreadedTCPServer.daemon_threads = True
+        # start server
+        self.t = ThreadedTCPServer((self.host, self.port), ModbusService)
+
+    def start(self):
+        self.t.serve_forever()
+
+
 if __name__ == '__main__':
     # parse args
     parser = argparse.ArgumentParser()
@@ -225,9 +238,6 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--port', type=int, default=5020,
                         help='TCP port')
     args = parser.parse_args()
-    # set class attribute
-    ThreadedTCPServer.allow_reuse_address = True
-    ThreadedTCPServer.daemon_threads = True
-    # start server
-    t = ThreadedTCPServer((args.host, args.port), Service)
-    t.serve_forever()
+    # start modbus server
+    server = ModbusTCPServer(host=args.host, port=args.port)
+    server.start()
