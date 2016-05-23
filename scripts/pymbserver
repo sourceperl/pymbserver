@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Python module: ModbusServer class (ModBus/TCP Server)
+# Modbus/TCP server
 
 import argparse
 from pyModbusTCPServer.server import ModbusServer
