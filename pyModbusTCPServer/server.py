@@ -4,7 +4,7 @@
 
 import socket
 import struct
-from threading import Lock
+from threading import Lock, Thread
 
 # for python2 compatibility
 try:
@@ -215,16 +215,23 @@ class ThreadedTCPServer(ThreadingMixIn, TCPServer):
 
 
 class ModbusServer(object):
-    def __init__(self, host='localhost', port=502):
+    def __init__(self, host='localhost', port=502, no_block=False, ipv6=False):
         # args
         self.host = host
         self.port = port
+        self.no_block = no_block
+        self.ipv6 = ipv6
         # set class attribute
-        ThreadedTCPServer.address_family = socket.AF_INET6
+        ThreadedTCPServer.address_family = socket.AF_INET6 if self.ipv6 else socket.AF_INET
         ThreadedTCPServer.allow_reuse_address = True
         ThreadedTCPServer.daemon_threads = True
-        # start server
-        self.t = ThreadedTCPServer((self.host, self.port), ModbusService)
+        # init server
+        self._service = ThreadedTCPServer((self.host, self.port), ModbusService)
+        self._serve_th = Thread(target=self._service.serve_forever)
+        self._serve_th.daemon = True
 
     def start(self):
-        self.t.serve_forever()
+        if self.no_block:
+            self._serve_th.start()
+        else:
+            self._service.serve_forever()
