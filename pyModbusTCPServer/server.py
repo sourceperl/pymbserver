@@ -41,6 +41,16 @@ def test_bit(value, offset):
     return bool(value & mask)
 
 
+def set_bit(value, offset):
+    mask = 1 << offset
+    return int(value | mask)
+
+
+def reset_bit(value, offset):
+    mask = ~(1 << offset)
+    return int(value & mask)
+
+
 # data class for modbus bits and words space (thread safe)
 class DataBank:
     bits_lock = Lock()
@@ -121,7 +131,9 @@ class ModbusService(BaseRequestHandler):
                         bytes_l = [0] * b_size
                         # populate bytes list with data bank bits
                         for i, item in enumerate(bits_l):
-                            bytes_l[int(i / 8)] += (2 ** (i % 8)) * int(item)
+                            if item:
+                                byte_i = int(i/8)
+                                bytes_l[byte_i] = set_bit(bytes_l[byte_i], i % 8)
                         # format body of frame with bits
                         tx_body = struct.pack('BB', rx_bd_fc, len(bytes_l))
                         # add bytes with bits
