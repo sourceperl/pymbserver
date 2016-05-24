@@ -35,6 +35,12 @@ EXP_GATEWAY_PATH_UNAVAILABLE = 0x0A
 EXP_GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND = 0x0B
 
 
+# misc function
+def test_bit(value, offset):
+    mask = 1 << offset
+    return bool(value & mask)
+
+
 # data class for modbus bits and words space (thread safe)
 class DataBank:
     bits_lock = Lock()
@@ -46,7 +52,7 @@ class DataBank:
     def get_bits(cls, address, number=1):
         with cls.bits_lock:
             if (address >= 0) and (address + number <= len(cls.bits)):
-                return cls.bits[address: number+address]
+                return cls.bits[address: number + address]
             else:
                 return None
 
@@ -54,7 +60,7 @@ class DataBank:
     def set_bits(cls, address, bit_list):
         with cls.bits_lock:
             if (address >= 0) and (address + len(bit_list) <= len(cls.bits)):
-                cls.bits[address: address+len(bit_list)] = bit_list
+                cls.bits[address: address + len(bit_list)] = bit_list
                 return True
             else:
                 return None
@@ -63,7 +69,7 @@ class DataBank:
     def get_words(cls, address, number=1):
         with cls.words_lock:
             if (address >= 0) and (address + number <= len(cls.words)):
-                return cls.words[address: number+address]
+                return cls.words[address: number + address]
             else:
                 return None
 
@@ -71,7 +77,7 @@ class DataBank:
     def set_words(cls, address, word_list):
         with cls.words_lock:
             if (address >= 0) and (address + len(word_list) <= len(cls.words)):
-                cls.words[address: address+len(word_list)] = word_list
+                cls.words[address: address + len(word_list)] = word_list
                 return True
             else:
                 return None
@@ -110,12 +116,12 @@ class ModbusService(BaseRequestHandler):
                     bits_l = DataBank.get_bits(b_address, b_count)
                     if bits_l:
                         # allocate bytes list
-                        b_size = int(b_count/8)
+                        b_size = int(b_count / 8)
                         b_size += 1 if (b_count % 8) else 0
                         bytes_l = [0] * b_size
                         # populate bytes list with data bank bits
                         for i, item in enumerate(bits_l):
-                            bytes_l[int(i/8)] += (2**(i % 8)) * int(item)
+                            bytes_l[int(i / 8)] += (2 ** (i % 8)) * int(item)
                         # format body of frame with bits
                         tx_body = struct.pack('BB', rx_bd_fc, len(bytes_l))
                         # add bytes with bits
@@ -161,15 +167,14 @@ class ModbusService(BaseRequestHandler):
             elif rx_bd_fc is WRITE_MULTIPLE_COILS:
                 (b_address, b_count, byte_count) = struct.unpack('>HHB', rx_body[1:6])
                 # check quantity of updated coils
-                if 0x0001 <= b_count <= 0x07B0:
+                if (0x0001 <= b_count <= 0x07B0) and (byte_count >= (b_count/8)):
                     # allocate bits list
                     bits_l = [False] * b_count
                     # populate bits list with bits from rx frame
                     for i, item in enumerate(bits_l):
-                        byte_i = int(i/8)
-                        byte_i += 1 if (i % 8) else 0
-                        b_offset = byte_i + 6
-                        bits_l[i] = bool(rx_body[b_offset] & 2**i % 8)
+                        b_bit_pos = int(i/8)+6
+                        b_bit_val = struct.unpack('B', rx_body[b_bit_pos:b_bit_pos+1])[0]
+                        bits_l[i] = test_bit(b_bit_val, i % 8)
                     # write words to data bank
                     if DataBank.set_bits(b_address, bits_l):
                         # send write ok frame
@@ -182,7 +187,7 @@ class ModbusService(BaseRequestHandler):
             elif rx_bd_fc is WRITE_MULTIPLE_REGISTERS:
                 (w_address, w_count, byte_count) = struct.unpack('>HHB', rx_body[1:6])
                 # check quantity of updated words
-                if 0x0001 <= w_count <= 0x007B:
+                if (0x0001 <= w_count <= 0x007B) and (byte_count == w_count * 2):
                     # allocate words list
                     words_l = [0] * w_count
                     # populate words list with words from rx frame
