@@ -113,10 +113,10 @@ class ModbusService(BaseRequestHandler):
                 break
             # body decode: function code
             rx_bd_fc = struct.unpack('B', rx_body[0:1])[0]
-            # close connection if function code is inconsistency
+            # close connection if function code is inconsistent
             if rx_bd_fc > 0x7F:
                 break
-            # do modbus functions
+            # default except status
             exp_status = EXP_NONE
             # functions Read Coils (0x01) or Read Discrete Inputs (0x02)
             if rx_bd_fc in (READ_COILS, READ_DISCRETE_INPUTS):
