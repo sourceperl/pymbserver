@@ -8,9 +8,9 @@ from threading import Lock, Thread
 
 # for python2 compatibility
 try:
-    from socketserver import BaseRequestHandler, TCPServer, ThreadingMixIn
+    from socketserver import BaseRequestHandler, ThreadingTCPServer
 except ImportError:
-    from SocketServer import BaseRequestHandler, TCPServer, ThreadingMixIn
+    from SocketServer import BaseRequestHandler, ThreadingTCPServer
 
 # some const
 # modbus function code
@@ -227,10 +227,6 @@ class ModbusService(BaseRequestHandler):
         self.request.close()
 
 
-class ThreadedTCPServer(ThreadingMixIn, TCPServer):
-    pass
-
-
 class ModbusServer(object):
     def __init__(self, host='localhost', port=502, no_block=False, ipv6=False):
         # args
@@ -239,11 +235,11 @@ class ModbusServer(object):
         self.no_block = no_block
         self.ipv6 = ipv6
         # set class attribute
-        ThreadedTCPServer.address_family = socket.AF_INET6 if self.ipv6 else socket.AF_INET
-        ThreadedTCPServer.allow_reuse_address = True
-        ThreadedTCPServer.daemon_threads = True
+        ThreadingTCPServer.address_family = socket.AF_INET6 if self.ipv6 else socket.AF_INET
+        ThreadingTCPServer.allow_reuse_address = True
+        ThreadingTCPServer.daemon_threads = True
         # init server
-        self._service = ThreadedTCPServer((self.host, self.port), ModbusService)
+        self._service = ThreadingTCPServer((self.host, self.port), ModbusService)
         self._serve_th = Thread(target=self._service.serve_forever)
         self._serve_th.daemon = True
 
