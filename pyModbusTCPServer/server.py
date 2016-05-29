@@ -236,14 +236,24 @@ class ModbusServer(object):
         self.ipv6 = ipv6
         # set class attribute
         ThreadingTCPServer.address_family = socket.AF_INET6 if self.ipv6 else socket.AF_INET
-        ThreadingTCPServer.allow_reuse_address = True
         ThreadingTCPServer.daemon_threads = True
         # init server
-        self._service = ThreadingTCPServer((self.host, self.port), ModbusService)
-        self._serve_th = Thread(target=self._service.serve_forever)
-        self._serve_th.daemon = True
+        self._service = ThreadingTCPServer((self.host, self.port), ModbusService, bind_and_activate=False)
+        # set socket options
+        self._service.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._service.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        # TODO test no_delay with bench
+        self._service.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        # add thread for no block mode
+        if self.no_block:
+            self._serve_th = Thread(target=self._service.serve_forever)
+            self._serve_th.daemon = True
 
     def start(self):
+        # bind and activate
+        self._service.server_bind()
+        self._service.server_activate()
+        # serve request
         if self.no_block:
             self._serve_th.start()
         else:
