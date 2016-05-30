@@ -4,7 +4,7 @@
 # Modbus/TCP server
 
 import argparse
-from pyModbusTCPServer.server import ModbusServer
+from pyModbusTCP.server import ModbusServer
 
 if __name__ == '__main__':
     # parse args
